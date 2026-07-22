@@ -7,8 +7,8 @@ import "./index.css";
 // Replace these coordinates with your actual venue
 // ==========================================================
 const ATTENDANCE_LOCATION = {
-  latitude: 19.060518054087595,
-  longitude: 72.88269359210045,
+  latitude: 19.066954,
+  longitude: 72.849631,
 };
 
 const ALLOWED_RADIUS_METERS = 75;
