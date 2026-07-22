@@ -3,15 +3,25 @@ import { Html5QrcodeScanner, Html5QrcodeScanType } from "html5-qrcode";
 import "./index.css";
 
 // ==========================================================
-// ATTENDANCE LOCATION
-// Replace these coordinates with your actual venue
+// ATTENDANCE LOCATIONS
+// Add as many venues as you need — attendance is marked if the
+// user is within range of ANY one of these. Each location has
+// its own radius.
 // ==========================================================
-const ATTENDANCE_LOCATION = {
-  latitude: 19.066954,
-  longitude: 72.849631,
-};
-
-const ALLOWED_RADIUS_METERS = 75;
+const ATTENDANCE_LOCATIONS = [
+  {
+    name: "SHGG",
+    latitude: 19.066954,
+    longitude: 72.849631,
+    radius: 75,
+  },
+  {
+    name: "Uttar Bharatiya Sangha (UBS)",
+    latitude: 19.070708,
+    longitude: 72.849771,
+    radius: 60,
+  },
+];
 
 // ==========================================================
 // Haversine Formula
@@ -223,14 +233,28 @@ export default function App() {
 
         setGpsAccuracy(Math.round(accuracy));
 
-        const dist = getDistanceInMeters(
-          latitude,
-          longitude,
-          ATTENDANCE_LOCATION.latitude,
-          ATTENDANCE_LOCATION.longitude,
+        const results = ATTENDANCE_LOCATIONS.map((loc) => {
+          const dist = getDistanceInMeters(
+            latitude,
+            longitude,
+            loc.latitude,
+            loc.longitude,
+          );
+
+          return {
+            ...loc,
+            dist,
+            remaining: dist - loc.radius,
+          };
+        });
+
+        const withinRange = results.find((loc) => loc.dist <= loc.radius);
+
+        const nearest = results.reduce((closest, loc) =>
+          loc.remaining < closest.remaining ? loc : closest,
         );
 
-        setDistance(dist);
+        setDistance(nearest.dist);
 
         setChecking(false);
 
@@ -252,13 +276,13 @@ export default function App() {
           return;
         }
 
-        if (dist <= ALLOWED_RADIUS_METERS) {
+        if (withinRange) {
           setMarked(true);
         } else {
           setPopup(
             `You are ${formatDistance(
-              dist,
-            )} away from the attendance location.\n\nMove closer than ${ALLOWED_RADIUS_METERS} meters to mark attendance.`,
+              nearest.remaining,
+            )} away from ${nearest.name}.\n\nTo mark attendance, please come within the designated location.`,
           );
         }
       },
