@@ -171,6 +171,9 @@ export default function App() {
           height: 250,
         },
         rememberLastUsedCamera: true,
+        videoConstraints: {
+          facingMode: { ideal: "environment" },
+        },
         supportedScanTypes:
           mode === "camera"
             ? [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
