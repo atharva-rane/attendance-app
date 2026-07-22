@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Html5QrcodeScanner, Html5QrcodeScanType } from "html5-qrcode";
 import "./index.css";
 
@@ -32,6 +32,34 @@ function getDistanceInMeters(lat1, lon1, lat2, lon2) {
       Math.sin(dLon / 2);
 
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
+
+// ==========================================================
+// QR Field Formatting
+// ==========================================================
+const FIELD_LABELS = {
+  VOLUNTEERNAME: "Volunteer Name",
+  MOBNO: "Mobile Number",
+  SEVA: "Seva",
+};
+
+const FIELD_ICONS = {
+  VOLUNTEERNAME: "👤",
+  MOBNO: "📱",
+  SEVA: "🛠️",
+};
+
+function formatLabel(key) {
+  if (FIELD_LABELS[key]) return FIELD_LABELS[key];
+
+  return key
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function formatIcon(key) {
+  return FIELD_ICONS[key] || "•";
 }
 
 function formatDistance(distance) {
@@ -69,6 +97,26 @@ export default function App() {
   const [gpsAccuracy, setGpsAccuracy] = useState(null);
 
   const scannerRef = useRef(null);
+
+  // =====================================
+  // Parsed QR Fields (falls back to raw text if not JSON)
+  // =====================================
+
+  const parsedQrFields = useMemo(() => {
+    if (!qrData) return null;
+
+    try {
+      const parsed = JSON.parse(qrData);
+
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return Object.entries(parsed);
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
+  }, [qrData]);
 
   // =====================================
   // Reset everything
@@ -292,15 +340,28 @@ export default function App() {
 
         {qrData && !marked && (
           <div className="qr-confirm">
-            <div>
-              <p className="label">✅ QR Code Scanned Successfully</p>
+            <p className="label">✅ QR Code Scanned Successfully</p>
 
+            {parsedQrFields ? (
+              <div className="qr-fields">
+                {parsedQrFields.map(([key, value]) => (
+                  <div className="qr-field" key={key}>
+                    <span className="qr-field-icon">{formatIcon(key)}</span>
+
+                    <div className="qr-field-text">
+                      <p className="qr-field-label">{formatLabel(key)}</p>
+                      <p className="qr-field-value">{String(value)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
               <p className="value">{qrData}</p>
+            )}
 
-              <button className="link-btn" onClick={resetAttendance}>
-                Scan another QR
-              </button>
-            </div>
+            <button className="link-btn" onClick={resetAttendance}>
+              Scan another QR
+            </button>
           </div>
         )}
 
